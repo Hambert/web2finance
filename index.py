@@ -5,6 +5,7 @@ import requests
 
 app = Flask(__name__)
 
+userAgent = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:81.0) Gecko/20100101 Firefox/81.0'}
 
 @app.route('/')
 def home():
@@ -18,7 +19,7 @@ def fug():
 
 
     url = "https://money.cnn.com/data/fear-and-greed/"
-    x = requests.get(url)
+    x = requests.get(url, headers=userAgent)
     soup = BeautifulSoup(x.content, 'html.parser')
     divs = soup.find_all('div', id='needleChart')
 
