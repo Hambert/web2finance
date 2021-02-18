@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from flask import Flask
 
 from bs4 import BeautifulSoup
@@ -32,9 +34,35 @@ def fug():
     for d in divs:
         htmlString = htmlString + "<li>"+ d.text.strip() + "</li>"
 
-        htmlString = htmlString + '</ul><hr><a href="https://money.cnn.com/data/fear-and-greed/">https://money.cnn.com/data/fear-and-greed/</a></body></html>'
+        htmlString = htmlString + '</ul><hr><a href="https://money.cnn.com/data/fear-and-greed/">https://money.cnn.com/data/fear-and-greed/</a><hr>'
+
+
+
+    htmlString = htmlString +'<a>Fear and Greed - Bitcoin: ' + getBtcFug(userAgent) + '</a></body></html>'
 
     return htmlString
+
+
+def getBtcFug(userAgent):
+
+    url = "https://alternative.me/crypto/fear-and-greed-index/"
+
+    try:
+        x = requests.get(url, headers=userAgent)
+        soup = BeautifulSoup(x.content, 'html.parser')
+
+        divs = soup.find_all('div', class_="fng-value")
+        i = 0
+        for x in divs:
+            #x.find('div').get_text()
+            if x.find("div", string="Now") != None:
+                btcFug = x.find("div", class_="fng-circle").text
+                
+
+        return btcFug
+    except:
+        return "Error"
+
 
 if __name__ == '__main__':
     # running app
