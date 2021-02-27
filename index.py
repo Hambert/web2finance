@@ -1,13 +1,25 @@
 #!/usr/bin/python
 
-from flask import Flask
+from flask import Flask, render_template, jsonify
 
 from bs4 import BeautifulSoup
 import requests
 
+from os import environ as env
+
+#SQL API
+import mysql
+from mysql.connector import Error
+from mysql.connector import errorcode
+connection = mysql.connector
+
+# Sleep timer
+from time import sleep
+import datetime
+
+
 app = Flask(__name__)
 
-userAgent = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:81.0) Gecko/20100101 Firefox/81.0'}
 
 @app.route('/')
 def home():
@@ -16,52 +28,69 @@ def home():
 
 @app.route('/fug')
 def fug():
-    # Return the current Fear & Greed Data from CNN
-    htmlString = '<!DOCTYPE html><html lang="de"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Fear & Greed Data from money.cnn.com</title></head><body><p><p>Fear and Greed Daten von CNN</p><ul>'
+   return render_template("index.html")
 
-
-    url = "https://money.cnn.com/data/fear-and-greed/"
-    x = requests.get(url, headers=userAgent)
-    soup = BeautifulSoup(x.content, 'html.parser')
-    divs = soup.find_all('div', id='needleChart')
-
-    for i in divs:
-        cols = i.find_all('li')
-        for ele in cols:
-            htmlString = htmlString + "<li>"+ ele.text.strip() + "</li>"
-
-    divs = soup.find_all('div', id="needleAsOfDate")
-    for d in divs:
-        htmlString = htmlString + "<li>"+ d.text.strip() + "</li>"
-
-        htmlString = htmlString + '</ul><hr><a href="https://money.cnn.com/data/fear-and-greed/">https://money.cnn.com/data/fear-and-greed/</a><hr>'
+@app.route('/api')
+def getFug():
+    return jsonify(getDataFromDB())
 
 
 
-    htmlString = htmlString +'<a>Fear and Greed - Bitcoin: ' + getBtcFug(userAgent) + '</a></body></html>'
-
-    return htmlString
-
-
-def getBtcFug(userAgent):
-
-    url = "https://alternative.me/crypto/fear-and-greed-index/"
-
+def getDataFromDB():
     try:
-        x = requests.get(url, headers=userAgent)
-        soup = BeautifulSoup(x.content, 'html.parser')
+      
+      connection = mysql.connector.connect(
+            host='mysql.webhosting73.1blu.de',
+            user=env['SQLUSER'],
+            password=env['SQLPW'],
+            database=env['SQLDB']
+        )
+      
+      if connection.is_connected():
+        db_Info = connection.get_server_info()
+        print("Connected to MySQL database... MySQL Server version on ",db_Info)
+        cursor = connection.cursor()
+        cursor.execute("select database();")
+        record = cursor.fetchone()
+        print ("Your connected to - ", record)
 
-        divs = soup.find_all('div', class_="fng-value")
-        i = 0
-        for x in divs:
-            #x.find('div').get_text()
-            if x.find("div", string="Now") != None:
-                btcFug = x.find("div", class_="fng-circle").text
-                
+        datadict = {}
 
-        return btcFug
-    except:
-        return "Error"
+        table = "finance_fug_CNN"
+        cursor.execute("SELECT value, sourceDate FROM " + table + " ORDER BY timestamp DESC LIMIT 1")
+        
+        result = cursor.fetchall()
+
+        datadict.update({'cnn_fug_now':{"value" : result[0][0], 'sourceDate':result[0][1]}})
+   
+        table = "finance_fug_BTC"
+        cursor.execute("SELECT value, sourceDate FROM " + table + " ORDER BY timestamp DESC LIMIT 1")
+        result = cursor.fetchall()
+
+        datadict.update({'btc_fug_now':{"value" : result[0][0], 'sourceDate':result[0][1]} })
+  
+        return datadict
+
+
+      if(connection.is_connected()):
+        cursor.close()
+        connection.close()
+        print("MySQL connection is closed")
+
+    except Error as err :
+      if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+        print("Something is wrong with your user name or password")
+      elif err.errno == errorcode.ER_BAD_DB_ERROR:
+        print("Database does not exist")
+      else:
+        print(err)
+
+    else:
+      #closing database connection.
+      connection.close()
+      print("MySQL connection is closed [finally]")
+
+
 
 
 if __name__ == '__main__':
