@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, redirect
 
 from bs4 import BeautifulSoup
 import requests
@@ -23,7 +23,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return 'Home Page Route'
+    return redirect(f"/fug")
 
 
 @app.route('/fug')
