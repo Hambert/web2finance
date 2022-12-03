@@ -1,3 +1,3 @@
 # web2finance
 
-Quick and dirty webscraper for Fear & Greed index fom cnn.com
+Flask website to show the CNN Fear & Greed and the Crypo Fear & Greed
